@@ -42,6 +42,7 @@ region_start_dict = {
 }
 
 class Sudoku:
+    # Defaulting grid = [] so that I can start from a partially solved puzzle
     def __init__(self, grid = []):
       self.grid = grid
 
@@ -49,14 +50,21 @@ class Sudoku:
       visual_puzzle = functools.reduce(self.print_row, self.grid, "")
       print(visual_puzzle)
 
-    def print_row(self, result, current):
-      return "" + result + "\n" + " | ".join(str(i) for i in current)
+    # using _ to denote unused variables throughout this file
+    def print_row(_, result, current):
+      # https://www.programiz.com/python-programming/string-interpolation
+      # f strings added in python 3.6
+      return f'{result}\n{" | ".join(str(i) for i in current)}'
 
+    # Recursively calls itself until all the rows (9 of them) are present
     def generate_game(self):
       self.add_row()
       if (len(self.grid) < 9):
         return self.generate_game()
 
+    # generates a possible row, then validates before adding to the main grid
+    # this way when we run into an impossible situation
+    # the row gets tossed out and we try again
     def add_row(self):
       is_valid = False
       row = False
@@ -68,11 +76,17 @@ class Sudoku:
       self.grid = [*self.grid, row]
       self.print()
 
+    # Uses the initial range as a base to loop through
     def generate_row(self):
       result = functools.reduce(self.generate_row_item, range, [])
       return result
 
-    def generate_row_item(self, current_row, currentItem):
+    # finds possible values for each cell based on validation rules
+    # picks a random one using sample
+    # if it runs into an impossible solution len(possible_values) < 1
+    # places a None value as a placeholder
+    # this will get caught by the post-generation validation and the row gets tossed
+    def generate_row_item(self, current_row, _):
       col = len(current_row)
       current_column = (
         [],
@@ -91,24 +105,26 @@ class Sudoku:
 
       return [*current_row, current_value]
 
+    # Validates a proposed new_grid before finalizing
+    # new grid must match row_validation (no duplicates)
+    # colum_validation (no duplicates)
+    # region validation (no duplicates)
     def validate_grid(self, row):
       new_grid = [*self.grid, row]
 
-      if (self.validate_row(new_grid, row) == False):
-        return False
+      # Checks if all items in the array are true
+      return all([
+        self.validate_row(row),
+        self.validate_columns(new_grid, row),
+        self.validate_regions(new_grid)
+      ])
 
-      if (self.validate_columns(new_grid, row) == False):
-        return False
-
-      if (self.validate_regions(new_grid, row) == False):
-        return False
-
-      return True
-
+    # Checks if each partial column is unique
     def validate_columns(self, new_grid, row):
-      return all(self.is_column_unique(new_grid, i) for i, item in enumerate(row))
+      return all(self.is_column_unique(new_grid, i) for i, _ in enumerate(row))
 
-    def is_column_unique(self, new_grid, index):
+    # Checks a partial column for uniqueness
+    def is_column_unique(_, new_grid, index):
       column = []
       if (len(new_grid) > 0):
         column = list(map(lambda grid_row: grid_row[index], new_grid))
@@ -116,17 +132,24 @@ class Sudoku:
       unique_column = pydash.arrays.uniq(column)
       return len(column) == len(unique_column)
 
-    def validate_row(self, new_grid, row):
+    # Checks a row for "None" values
+    # Tosses it out as a proposed next grid if it doesn't
+    def validate_row(_, row):
       return all(bool(item) == True for item in row)
 
-    def validate_regions(self, new_grid, row):
+    # Each region or 3x3 grid gets validated for uniqueness
+    def validate_regions(self, new_grid):
       return all(self.validate_region(region_id, new_grid) for region_id in range)
 
+    # Validates a single region
     def validate_region(self, region_id, new_grid):
       region = self.get_region(region_id, new_grid)
       unique_region = pydash.arrays.uniq(region)
       return len(unique_region) == len(region)
 
+    # Finds a region based on the current column
+    # and progress of the grid
+    # @todo: clean this up
     def find_region(self, col):
       row = len(self.grid)
 
@@ -152,6 +175,8 @@ class Sudoku:
 
       return 9
 
+    # Retrieves a given 3x3 grid based on region number
+    # grid is optional param so we can get the regions from a proposed grid
     def get_region(self, id = 1, grid = None):
       if grid is None:
         grid = self.grid
