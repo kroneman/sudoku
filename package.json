@@ -2,5 +2,16 @@
   "name": "sudoku",
   "version": "1.0.0",
   "main": "index.js",
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "start": "nodemon ./index.js",
+    "test": "mocha *.test.js --verbose"
+  },
+  "dependencies": {
+    "chai": "^4.2.0",
+    "lodash": "^4.17.20",
+    "mocha": "^8.2.1",
+    "nodemon": "^2.0.6",
+    "sinon": "^9.2.1"
+  }
 }
