@@ -1,45 +1,7 @@
-import functools
-import pydash
-
-range = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-region_start_dict = {
-  1: {
-    "row": 0,
-    "col": 0,
-  },
-  2: {
-    "row": 0,
-    "col": 3,
-  },
-  3: {
-    "row": 0,
-    "col": 6,
-  },
-  4: {
-    "row": 3,
-    "col": 0,
-  },
-  5: {
-    "row": 3,
-    "col": 3,
-  },
-  6: {
-    "row": 3,
-    "col": 6,
-  },
-  7: {
-    "row": 6,
-    "col": 0,
-  },
-  8: {
-    "row": 6,
-    "col": 3,
-  },
-  9: {
-    "row": 6,
-    "col": 6,
-  }
-}
+from constants import range, region_start_dict
+from pydash import sample
+from pydash.arrays import difference
+from functools import reduce
 
 class Sudoku:
     # Defaulting grid = [] so that I can start from a partially solved puzzle
@@ -47,7 +9,7 @@ class Sudoku:
       self.grid = grid
 
     def print(self):
-      visual_puzzle = functools.reduce(self.print_row, self.grid, "")
+      visual_puzzle = reduce(self.print_row, self.grid, "")
       print(visual_puzzle)
 
     # using _ to denote unused variables throughout this file
@@ -78,7 +40,7 @@ class Sudoku:
 
     # Uses the initial range as a base to loop through
     def generate_row(self):
-      result = functools.reduce(self.generate_row_item, range, [])
+      result = reduce(self.generate_row_item, range, [])
       return result
 
     # finds possible values for each cell based on validation rules
@@ -92,18 +54,22 @@ class Sudoku:
         [],
         list(map(lambda row: row[col], self.grid))
       )[len(self.grid) > 0]
-
-      possible_row_values = pydash.arrays.difference(range, current_row)
-      possible_col_values = pydash.arrays.difference(possible_row_values, current_column)
       region_id = self.find_region(col)
       region_values = self.get_region(region_id)
-      possible_values = pydash.arrays.difference(possible_col_values, region_values)
-      current_value = None
 
-      if len(possible_values) > 0:
-        current_value = pydash.sample(possible_values)
+      possible_row_values = difference(range, current_row)
+      possible_col_values = difference(possible_row_values, current_column)
+      possible_values = difference(possible_col_values, region_values)
+      current_value = self.sample_or_none(possible_values)
 
       return [*current_row, current_value]
+
+    # Sample throws an error when an empty array is passed
+    def sample_or_none(_, possible_values):
+      if (len(possible_values) > 0):
+        return sample(possible_values)
+
+      return None
 
     # Validates a proposed new_grid before finalizing
     # new grid must match row_validation (no duplicates)
@@ -129,7 +95,7 @@ class Sudoku:
       if (len(new_grid) > 0):
         column = list(map(lambda grid_row: grid_row[index], new_grid))
 
-      unique_column = pydash.arrays.uniq(column)
+      unique_column = set([*column])
       return len(column) == len(unique_column)
 
     # Checks a row for "None" values
@@ -144,7 +110,7 @@ class Sudoku:
     # Validates a single region
     def validate_region(self, region_id, new_grid):
       region = self.get_region(region_id, new_grid)
-      unique_region = pydash.arrays.uniq(region)
+      unique_region = set([*region])
       return len(unique_region) == len(region)
 
     # Finds a region based on the current column
