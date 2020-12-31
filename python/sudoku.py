@@ -1,12 +1,18 @@
-from constants import range, region_start_dict
+from constants import number_range, region_start_dict
 from pydash import sample
 from pydash.arrays import difference
 from functools import reduce
+from datetime import datetime
 
 class Sudoku:
     # Defaulting grid = [] so that I can start from a partially solved puzzle
-    def __init__(self, grid = []):
+    def __init__(self, grid = [], debug = False):
       self.grid = grid
+      self.DEBUG = bool(debug)
+      self.start_time = datetime.now()
+
+    def time_since_start(self):
+      return datetime.now() - self.start_time
 
     def print(self):
       visual_puzzle = reduce(self.print_row, self.grid, "")
@@ -34,13 +40,17 @@ class Sudoku:
       while(is_valid == False):
         row = self.generate_row()
         is_valid = self.validate_grid(row)
+        duration = self.time_since_start()
+        if duration.seconds > 10:
+          print("Long running process") 
 
       self.grid = [*self.grid, row]
-      self.print()
+      if self.DEBUG:
+        self.print()
 
-    # Uses the initial range as a base to loop through
+    # Uses the initial number_range as a base to loop through
     def generate_row(self):
-      result = reduce(self.generate_row_item, range, [])
+      result = reduce(self.generate_row_item, number_range, [])
       return result
 
     # finds possible values for each cell based on validation rules
@@ -57,7 +67,7 @@ class Sudoku:
       region_id = self.find_region(col)
       region_values = self.get_region(region_id)
 
-      possible_row_values = difference(range, current_row)
+      possible_row_values = difference(number_range, current_row)
       possible_col_values = difference(possible_row_values, current_column)
       possible_values = difference(possible_col_values, region_values)
       current_value = self.sample_or_none(possible_values)
@@ -105,7 +115,7 @@ class Sudoku:
 
     # Each region or 3x3 grid gets validated for uniqueness
     def validate_regions(self, new_grid):
-      return all(self.validate_region(region_id, new_grid) for region_id in range)
+      return all(self.validate_region(region_id, new_grid) for region_id in number_range)
 
     # Validates a single region
     def validate_region(self, region_id, new_grid):
@@ -120,7 +130,7 @@ class Sudoku:
       row = len(self.grid)
 
       if (row < 3):
-        if (col < 3):
+        if (col < 3): 
           return 1
         if (col < 6):
           return 2

@@ -1,5 +1,5 @@
 from sudoku import Sudoku
 
-puzzle = Sudoku()
+puzzle = Sudoku([], True)
 puzzle.generate_game()
 puzzle.print()
